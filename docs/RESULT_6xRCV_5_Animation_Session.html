@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D GNSS Session Operations Dashboard</title>
+    <style>
+        :root { 
+            --bg-color: #0f0f11; 
+            --panel-bg: #16161a; 
+            --border-color: #24242b; 
+            --text-main: #f4f4f5; 
+            --text-muted: #a1a1aa; 
+            --primary: #3a86ff; 
+            --success: #06d6a0; 
+            --warning: #ffb703; 
+        }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        .left-pane { width: 60%; height: 100%; background-color: var(--panel-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .right-pane { width: 40%; height: 100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1b1b22 0%, #0f0f11 100%); }
+        .pane-header { padding: 20px; border-bottom: 1px solid var(--border-color); }
+        .pane-header h1 { margin: 0 0 5px 0; font-size: 1.3rem; font-weight: 700; }
+        .pane-header p { margin: 0; color: var(--text-muted); font-size: 0.8rem; }
+        .table-container { flex: 1; overflow-y: auto; padding: 15px; }
+        .table-container::-webkit-scrollbar { width: 6px; }
+        .table-container::-webkit-scrollbar-thumb { background: #2e2e38; border-radius: 3px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.78rem; }
+        th { background-color: var(--bg-color); padding: 10px 8px; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 5; }
+        td { padding: 10px 8px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        
+        tr.session-row { cursor: pointer; transition: background 0.15s ease; }
+        tr.session-row:hover, tr.session-row.active { background-color: rgba(58, 134, 255, 0.12); }
+        
+        /* Subtle treatment for transit rows */
+        tr.transit-row { opacity: 0.45; font-style: italic; }
+        tr.transit-row:hover, tr.transit-row.active { background-color: rgba(255, 255, 255, 0.03); }
+        
+        .badge-session { background-color: #27272a; color: #ffffff; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        tr.transit-row .badge-session { background-color: #3f3f46; color: var(--text-muted); }
+        
+        .action-keep { color: var(--success); font-weight: bold; }
+        .action-move { color: var(--warning); font-weight: bold; }
+        .action-start { color: var(--primary); font-weight: bold; }
+        
+        svg { width: 92%; height: 92%; }
+        .base-line { stroke: #27272a; stroke-width: 14.497577968870784; transition: stroke 0.25s, stroke-width 0.25s; }
+        .station-node { fill: #18181b; stroke: #3f3f46; stroke-width: 3.866020791698876; transition: fill 0.25s, stroke 0.25s; }
+        .station-label { fill: var(--text-muted); font-size: 115.98062375096627px; font-weight: bold; font-family: sans-serif; }
+        .base-line.active-wire { stroke: var(--primary); stroke-width: 33.82768192736516; }
+        .station-node.active-node { fill: var(--success); stroke: #ffffff; }
+    </style>
+</head>
+<body>
+
+    <div class="left-pane">
+        <div class="pane-header">
+            <h1>3D GNSS Operations Control Panel (PSN@CHULA_2026)</h1>
+            <p>Receiver allocations bounded to 6 available GNSS set</p>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Session</th>
+                        <th>Time Frame</th>
+                        <th>Duration</th>
+                        <th>Producible Baselines</th>
+                        <th>Count</th>
+                        <th>RCV#1 Pt</th><th>RCV#1 Act</th> <th>RCV#2 Pt</th><th>RCV#2 Act</th> <th>RCV#3 Pt</th><th>RCV#3 Act</th> <th>RCV#4 Pt</th><th>RCV#4 Act</th> <th>RCV#5 Pt</th><th>RCV#5 Act</th> <th>RCV#6 Pt</th><th>RCV#6 Act</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="session-row " data-baselines="CBM25-CBM52,CBM24*-CBM25,CBM24*-CBM42*,L0BM05*-CBM24*,L0BM05*-CBM22">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-001</span></td>
+                        <td>08:00 - 08:40</td>
+                        <td>40.0 min</td>
+                        <td>CBM25➔CBM52<br>CBM24*➔CBM25<br>CBM24*➔CBM42*<br>L0BM05*➔CBM24*<br>L0BM05*➔CBM22</td>
+                        <td>5</td>
+                        <td>CBM22</td><td><span class="action-start">START</span></td>
+                        <td>CBM24*</td><td><span class="action-start">START</span></td>
+                        <td>CBM25</td><td><span class="action-start">START</span></td>
+                        <td>CBM42*</td><td><span class="action-start">START</span></td>
+                        <td>CBM52</td><td><span class="action-start">START</span></td>
+                        <td>L0BM05*</td><td><span class="action-start">START</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>08:40 - 09:20</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM26-CBM42*,CBM42*-CBM52,L0BM08-CBM52,L0BM14-CBM52,L0BM14-CBM27">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-002</span></td>
+                        <td>09:20 - 10:00</td>
+                        <td>40.0 min</td>
+                        <td>CBM26➔CBM42*<br>CBM42*➔CBM52<br>L0BM08➔CBM52<br>L0BM14➔CBM52<br>L0BM14➔CBM27</td>
+                        <td>5</td>
+                        <td>CBM26</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM27</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM08</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM42*</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM52</td><td><span class="action-keep">KEEP</span></td>
+                        <td>L0BM14</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>10:00 - 10:40</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM27-CBM28*,CBM27-CBM50*,CBM29-CBM50*,CBM29-CBM35*,L0BM14-CBM35*">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-003</span></td>
+                        <td>10:40 - 11:20</td>
+                        <td>40.0 min</td>
+                        <td>CBM27➔CBM28*<br>CBM27➔CBM50*<br>CBM29➔CBM50*<br>CBM29➔CBM35*<br>L0BM14➔CBM35*</td>
+                        <td>5</td>
+                        <td>CBM28*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM27</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM29</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM35*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM50*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM14</td><td><span class="action-keep">KEEP</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>11:20 - 12:00</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM34-CBM35*,L0BM09-CBM34,RBM02-CBM34,CBM34-CBM52,CBM24*-CBM52">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-004</span></td>
+                        <td>12:00 - 12:40</td>
+                        <td>40.0 min</td>
+                        <td>CBM34➔CBM35*<br>L0BM09➔CBM34<br>RBM02➔CBM34<br>CBM34➔CBM52<br>CBM24*➔CBM52</td>
+                        <td>5</td>
+                        <td>CBM24*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM34</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM52</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM35*</td><td><span class="action-keep">KEEP</span></td>
+                        <td>L0BM09</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>RBM02</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>12:40 - 13:20</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM24*-CBM44*,CBM21-CBM44*,CBM17-CBM21,CBM17-CBM48*,CBM17-CBM18">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-005</span></td>
+                        <td>13:20 - 14:00</td>
+                        <td>40.0 min</td>
+                        <td>CBM24*➔CBM44*<br>CBM21➔CBM44*<br>CBM17➔CBM21<br>CBM17➔CBM48*<br>CBM17➔CBM18</td>
+                        <td>5</td>
+                        <td>CBM24*</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM17</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM18</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM21</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM44*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM48*</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>14:00 - 14:40</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="RBM01-CBM17,L0BM07-CBM17,L0BM07-CBM23,CBM23-CBM48*,CBM22-CBM23">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-006</span></td>
+                        <td>14:40 - 15:20</td>
+                        <td>40.0 min</td>
+                        <td>RBM01➔CBM17<br>L0BM07➔CBM17<br>L0BM07➔CBM23<br>CBM23➔CBM48*<br>CBM22➔CBM23</td>
+                        <td>5</td>
+                        <td>CBM22</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM17</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM23</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM07</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>RBM01</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM48*</td><td><span class="action-keep">KEEP</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>15:20 - 16:00</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM22-CBM25,CBM23-CBM25,L0BM05*-CBM25,L0BM05*-CBM44*,CBM43*-CBM44*">
+                        <td>Day-1</td>
+                        <td><span class="badge-session">S-007</span></td>
+                        <td>16:00 - 16:40</td>
+                        <td>40.0 min</td>
+                        <td>CBM22➔CBM25<br>CBM23➔CBM25<br>L0BM05*➔CBM25<br>L0BM05*➔CBM44*<br>CBM43*➔CBM44*</td>
+                        <td>5</td>
+                        <td>CBM22</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM25</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM23</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM43*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM44*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM05*</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="L0BM06-CBM20*,L0BM07-CBM20*,L0BM06-CBM43*,CBM21-CBM43*,CBM21-CBM26">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-008</span></td>
+                        <td>08:00 - 08:40</td>
+                        <td>40.0 min</td>
+                        <td>L0BM06➔CBM20*<br>L0BM07➔CBM20*<br>L0BM06➔CBM43*<br>CBM21➔CBM43*<br>CBM21➔CBM26</td>
+                        <td>5</td>
+                        <td>CBM20*</td><td><span class="action-start">START</span></td>
+                        <td>CBM21</td><td><span class="action-start">START</span></td>
+                        <td>CBM26</td><td><span class="action-start">START</span></td>
+                        <td>CBM43*</td><td><span class="action-start">START</span></td>
+                        <td>L0BM06</td><td><span class="action-start">START</span></td>
+                        <td>L0BM07</td><td><span class="action-start">START</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>08:40 - 09:20</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM26-CBM44*,RBM04*-CBM26,RBM04*-L0BM14,RBM04*-CBM28*,RBM04*-CBM50*">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-009</span></td>
+                        <td>09:20 - 10:00</td>
+                        <td>40.0 min</td>
+                        <td>CBM26➔CBM44*<br>RBM04*➔CBM26<br>RBM04*➔L0BM14<br>RBM04*➔CBM28*<br>RBM04*➔CBM50*</td>
+                        <td>5</td>
+                        <td>CBM28*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM44*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM26</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM50*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM14</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>RBM04*</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>10:00 - 10:40</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM22-CBM44*,CBM22-CBM49*,L0BM07-CBM49*,CBM43*-CBM49*,CBM20*-CBM43*">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-010</span></td>
+                        <td>10:40 - 11:20</td>
+                        <td>40.0 min</td>
+                        <td>CBM22➔CBM44*<br>CBM22➔CBM49*<br>L0BM07➔CBM49*<br>CBM43*➔CBM49*<br>CBM20*➔CBM43*</td>
+                        <td>5</td>
+                        <td>CBM20*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM44*</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM22</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM43*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM49*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM07</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>11:20 - 12:00</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM17-CBM20*,CBM18-CBM20*,CBM18-CBM21,L0BM06-CBM18,RBM04*-CBM21">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-011</span></td>
+                        <td>12:00 - 12:40</td>
+                        <td>40.0 min</td>
+                        <td>CBM17➔CBM20*<br>CBM18➔CBM20*<br>CBM18➔CBM21<br>L0BM06➔CBM18<br>RBM04*➔CBM21</td>
+                        <td>5</td>
+                        <td>CBM20*</td><td><span class="action-keep">KEEP</span></td>
+                        <td>CBM17</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM18</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM21</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM06</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>RBM04*</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>12:40 - 13:20</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="L0BM06-CBM21,RBM01-CBM21,RBM01-CBM48*,L0BM08-CBM48*,RBM02-L0BM08">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-012</span></td>
+                        <td>13:20 - 14:00</td>
+                        <td>40.0 min</td>
+                        <td>L0BM06➔CBM21<br>RBM01➔CBM21<br>RBM01➔CBM48*<br>L0BM08➔CBM48*<br>RBM02➔L0BM08</td>
+                        <td>5</td>
+                        <td>CBM48*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM08</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>RBM01</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM21</td><td><span class="action-keep">KEEP</span></td>
+                        <td>L0BM06</td><td><span class="action-keep">KEEP</span></td>
+                        <td>RBM02</td><td><span class="action-move">MOVE_TO</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>14:00 - 14:40</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="RBM02-L0BM09,L0BM09-CBM52,CBM35*-CBM52,CBM27-CBM35*,CBM27-CBM29">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-013</span></td>
+                        <td>14:40 - 15:20</td>
+                        <td>40.0 min</td>
+                        <td>RBM02➔L0BM09<br>L0BM09➔CBM52<br>CBM35*➔CBM52<br>CBM27➔CBM35*<br>CBM27➔CBM29</td>
+                        <td>5</td>
+                        <td>CBM27</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM29</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM35*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM52</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM09</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>RBM02</td><td><span class="action-keep">KEEP</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>15:20 - 16:00</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="L0BM08-L0BM09,L0BM08-CBM23,CBM23-CBM49*,L0BM08-CBM25">
+                        <td>Day-2</td>
+                        <td><span class="badge-session">S-014</span></td>
+                        <td>16:00 - 16:40</td>
+                        <td>40.0 min</td>
+                        <td>L0BM08➔L0BM09<br>L0BM08➔CBM23<br>CBM23➔CBM49*<br>L0BM08➔CBM25</td>
+                        <td>4</td>
+                        <td>CBM23</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM25</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM49*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM08</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>L0BM09</td><td><span class="action-keep">KEEP</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="L0BM14-CBM28*,CBM28*-CBM50*,L0BM14-CBM42*,RBM04*-CBM42*">
+                        <td>Day-3</td>
+                        <td><span class="badge-session">S-015</span></td>
+                        <td>08:00 - 08:40</td>
+                        <td>40.0 min</td>
+                        <td>L0BM14➔CBM28*<br>CBM28*➔CBM50*<br>L0BM14➔CBM42*<br>RBM04*➔CBM42*</td>
+                        <td>4</td>
+                        <td>CBM28*</td><td><span class="action-start">START</span></td>
+                        <td>CBM42*</td><td><span class="action-start">START</span></td>
+                        <td>CBM50*</td><td><span class="action-start">START</span></td>
+                        <td>L0BM14</td><td><span class="action-start">START</span></td>
+                        <td>RBM04*</td><td><span class="action-start">START</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-3</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>08:40 - 09:20</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="CBM24*-CBM26">
+                        <td>Day-3</td>
+                        <td><span class="badge-session">S-016</span></td>
+                        <td>09:20 - 10:00</td>
+                        <td>40.0 min</td>
+                        <td>CBM24*➔CBM26</td>
+                        <td>1</td>
+                        <td>CBM24*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM26</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                    </tr>
+                    <tr class="session-row transit-row" data-baselines="">
+                        <td>Day-3</td>
+                        <td><span class="badge-session">transit</span></td>
+                        <td>10:00 - 10:40</td>
+                        <td>40.0 min</td>
+                        <td>-</td>
+                        <td>0</td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                        <td>-</td><td><span class="">-</span></td>
+                    </tr>
+                    <tr class="session-row " data-baselines="L0BM07-CBM43*,L0BM07-CBM48*,CBM22-CBM43*">
+                        <td>Day-3</td>
+                        <td><span class="badge-session">S-017</span></td>
+                        <td>10:40 - 11:20</td>
+                        <td>40.0 min</td>
+                        <td>L0BM07➔CBM43*<br>L0BM07➔CBM48*<br>CBM22➔CBM43*</td>
+                        <td>3</td>
+                        <td>CBM22</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM43*</td><td><span class="action-move">MOVE_TO</span></td>
+                        <td>CBM48*</td><td><span class="action-start">START</span></td>
+                        <td>L0BM07</td><td><span class="action-start">START</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                        <td>STANDBY</td><td><span class="">STANDBY</span></td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="right-pane">
+        <svg viewBox="271025.78113583074 1905358.9219750543 12564.567573021346 9309.552072892437" xmlns="http://www.w3.org/2000/svg">
+            <g transform="scale(1, -1) translate(0, -3820027.396023001)">
+            <line id="bl-CBM25-CBM52" data-alt-id="bl-CBM52-CBM25" class="base-line" x1="277076.5619671177" y1="1911090.7038865297" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-L0BM05*-CBM22" data-alt-id="bl-CBM22-L0BM05*" class="base-line" x1="276153.5565570226" y1="1910602.7020638133" x2="275975.5558004995" y2="1910830.7034562866" />
+            <line id="bl-CBM21-CBM44*" data-alt-id="bl-CBM44*-CBM21" class="base-line" x1="274499.54759935377" y1="1910558.7033014647" x2="275717.5542890747" y2="1910695.7029552136" />
+            <line id="bl-L0BM14-CBM27" data-alt-id="bl-CBM27-L0BM14" class="base-line" x1="277202.56047742" y1="1908645.6905305197" x2="278429.5667623584" y2="1908258.6873480382" />
+            <line id="bl-CBM17-CBM48*" data-alt-id="bl-CBM48*-CBM17" class="base-line" x1="273066.5417683461" y1="1912657.7159406645" x2="276109.55864939955" y2="1913218.7162510597" />
+            <line id="bl-CBM24*-CBM42*" data-alt-id="bl-CBM42*-CBM24*" class="base-line" x1="276123.555881041" y1="1910025.6989661956" x2="276459.5567277261" y2="1908940.6927888521" />
+            <line id="bl-CBM27-CBM28*" data-alt-id="bl-CBM28*-CBM27" class="base-line" x1="278429.5667623584" y1="1908258.6873480382" x2="277727.56250401406" y2="1907732.6851140284" />
+            <line id="bl-CBM27-CBM50*" data-alt-id="bl-CBM50*-CBM27" class="base-line" x1="278429.5667623584" y1="1908258.6873480382" x2="278097.5636861888" y2="1906808.6797719414" />
+            <line id="bl-CBM29-CBM35*" data-alt-id="bl-CBM35*-CBM29" class="base-line" x1="278780.5688525492" y1="1908478.6882322887" x2="278900.5697614857" y2="1908774.6897319073" />
+            <line id="bl-L0BM05*-CBM24*" data-alt-id="bl-CBM24*-L0BM05*" class="base-line" x1="276153.5565570226" y1="1910602.7020638133" x2="276123.555881041" y2="1910025.6989661956" />
+            <line id="bl-CBM17-CBM18" data-alt-id="bl-CBM18-CBM17" class="base-line" x1="273066.5417683461" y1="1912657.7159406645" x2="273404.543363405" y2="1912408.7142908245" />
+            <line id="bl-CBM26-CBM42*" data-alt-id="bl-CBM42*-CBM26" class="base-line" x1="275590.552278426" y1="1909211.6950311288" x2="276459.5567277261" y2="1908940.6927888521" />
+            <line id="bl-CBM24*-CBM25" data-alt-id="bl-CBM25-CBM24*" class="base-line" x1="276123.555881041" y1="1910025.6989661956" x2="277076.5619671177" y2="1911090.7038865297" />
+            <line id="bl-CBM24*-CBM44*" data-alt-id="bl-CBM44*-CBM24*" class="base-line" x1="276123.555881041" y1="1910025.6989661956" x2="275717.5542890747" y2="1910695.7029552136" />
+            <line id="bl-L0BM09-CBM34" data-alt-id="bl-CBM34-L0BM09" class="base-line" x1="279971.5779640883" y1="1911535.7037494257" x2="279041.57093662623" y2="1909244.6921560117" />
+            <line id="bl-L0BM07-CBM23" data-alt-id="bl-CBM23-L0BM07" class="base-line" x1="275830.5568903652" y1="1912929.714937349" x2="276715.5606474029" y2="1911795.7080206692" />
+            <line id="bl-CBM17-CBM21" data-alt-id="bl-CBM21-CBM17" class="base-line" x1="273066.5417683461" y1="1912657.7159406645" x2="274499.54759935377" y2="1910558.7033014647" />
+            <line id="bl-RBM01-CBM17" data-alt-id="bl-CBM17-RBM01" class="base-line" x1="272475.5389327178" y1="1913039.7185373865" x2="273066.5417683461" y2="1912657.7159406645" />
+            <line id="bl-CBM23-CBM48*" data-alt-id="bl-CBM48*-CBM23" class="base-line" x1="276715.5606474029" y1="1911795.7080206692" x2="276109.55864939955" y2="1913218.7162510597" />
+            <line id="bl-CBM42*-CBM52" data-alt-id="bl-CBM52-CBM42*" class="base-line" x1="276459.5567277261" y1="1908940.6927888521" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-CBM22-CBM23" data-alt-id="bl-CBM23-CBM22" class="base-line" x1="275975.5558004995" y1="1910830.7034562866" x2="276715.5606474029" y2="1911795.7080206692" />
+            <line id="bl-RBM02-CBM34" data-alt-id="bl-CBM34-RBM02" class="base-line" x1="282140.590911965" y1="1912985.7097083223" x2="279041.57093662623" y2="1909244.6921560117" />
+            <line id="bl-L0BM08-CBM52" data-alt-id="bl-CBM52-L0BM08" class="base-line" x1="278416.5705746142" y1="1912660.7111969523" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-L0BM07-CBM17" data-alt-id="bl-CBM17-L0BM07" class="base-line" x1="275830.5568903652" y1="1912929.714937349" x2="273066.5417683461" y2="1912657.7159406645" />
+            <line id="bl-CBM29-CBM50*" data-alt-id="bl-CBM50*-CBM29" class="base-line" x1="278780.5688525492" y1="1908478.6882322887" x2="278097.5636861888" y2="1906808.6797719414" />
+            <line id="bl-L0BM06-CBM20*" data-alt-id="bl-CBM20*-L0BM06" class="base-line" x1="274227.5473850769" y1="1911952.7110868834" x2="274378.54850078025" y2="1912289.7127736802" />
+            <line id="bl-CBM21-CBM43*" data-alt-id="bl-CBM43*-CBM21" class="base-line" x1="274499.54759935377" y1="1910558.7033014647" x2="275150.5519746728" y2="1911525.707952068" />
+            <line id="bl-CBM22-CBM25" data-alt-id="bl-CBM25-CBM22" class="base-line" x1="275975.5558004995" y1="1910830.7034562866" x2="277076.5619671177" y2="1911090.7038865297" />
+            <line id="bl-L0BM14-CBM52" data-alt-id="bl-CBM52-L0BM14" class="base-line" x1="277202.56047742" y1="1908645.6905305197" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-CBM43*-CBM44*" data-alt-id="bl-CBM44*-CBM43*" class="base-line" x1="275150.5519746728" y1="1911525.707952068" x2="275717.5542890747" y2="1910695.7029552136" />
+            <line id="bl-CBM21-CBM26" data-alt-id="bl-CBM26-CBM21" class="base-line" x1="274499.54759935377" y1="1910558.7033014647" x2="275590.552278426" y2="1909211.6950311288" />
+            <line id="bl-L0BM07-CBM20*" data-alt-id="bl-CBM20*-L0BM07" class="base-line" x1="275830.5568903652" y1="1912929.714937349" x2="274378.54850078025" y2="1912289.7127736802" />
+            <line id="bl-CBM34-CBM52" data-alt-id="bl-CBM52-CBM34" class="base-line" x1="279041.57093662623" y1="1909244.6921560117" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-RBM02-L0BM09" data-alt-id="bl-L0BM09-RBM02" class="base-line" x1="282140.590911965" y1="1912985.7097083223" x2="279971.5779640883" y2="1911535.7037494257" />
+            <line id="bl-CBM26-CBM44*" data-alt-id="bl-CBM44*-CBM26" class="base-line" x1="275590.552278426" y1="1909211.6950311288" x2="275717.5542890747" y2="1910695.7029552136" />
+            <line id="bl-L0BM14-CBM35*" data-alt-id="bl-CBM35*-L0BM14" class="base-line" x1="277202.56047742" y1="1908645.6905305197" x2="278900.5697614857" y2="1908774.6897319073" />
+            <line id="bl-CBM34-CBM35*" data-alt-id="bl-CBM35*-CBM34" class="base-line" x1="279041.57093662623" y1="1909244.6921560117" x2="278900.5697614857" y2="1908774.6897319073" />
+            <line id="bl-CBM23-CBM25" data-alt-id="bl-CBM25-CBM23" class="base-line" x1="276715.5606474029" y1="1911795.7080206692" x2="277076.5619671177" y2="1911090.7038865297" />
+            <line id="bl-L0BM05*-CBM25" data-alt-id="bl-CBM25-L0BM05*" class="base-line" x1="276153.5565570226" y1="1910602.7020638133" x2="277076.5619671177" y2="1911090.7038865297" />
+            <line id="bl-L0BM05*-CBM44*" data-alt-id="bl-CBM44*-L0BM05*" class="base-line" x1="276153.5565570226" y1="1910602.7020638133" x2="275717.5542890747" y2="1910695.7029552136" />
+            <line id="bl-L0BM06-CBM43*" data-alt-id="bl-CBM43*-L0BM06" class="base-line" x1="274227.5473850769" y1="1911952.7110868834" x2="275150.5519746728" y2="1911525.707952068" />
+            <line id="bl-CBM18-CBM21" data-alt-id="bl-CBM21-CBM18" class="base-line" x1="273404.543363405" y1="1912408.7142908245" x2="274499.54759935377" y2="1910558.7033014647" />
+            <line id="bl-RBM04*-L0BM14" data-alt-id="bl-L0BM14-RBM04*" class="base-line" x1="275862.5530751172" y1="1908459.6907124552" x2="277202.56047742" y2="1908645.6905305197" />
+            <line id="bl-RBM04*-CBM26" data-alt-id="bl-CBM26-RBM04*" class="base-line" x1="275862.5530751172" y1="1908459.6907124552" x2="275590.552278426" y2="1909211.6950311288" />
+            <line id="bl-CBM24*-CBM52" data-alt-id="bl-CBM52-CBM24*" class="base-line" x1="276123.555881041" y1="1910025.6989661956" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-L0BM08-CBM48*" data-alt-id="bl-CBM48*-L0BM08" class="base-line" x1="278416.5705746142" y1="1912660.7111969523" x2="276109.55864939955" y2="1913218.7162510597" />
+            <line id="bl-L0BM07-CBM49*" data-alt-id="bl-CBM49*-L0BM07" class="base-line" x1="275830.5568903652" y1="1912929.714937349" x2="275958.5564540848" y2="1911666.7079949155" />
+            <line id="bl-RBM04*-CBM28*" data-alt-id="bl-CBM28*-RBM04*" class="base-line" x1="275862.5530751172" y1="1908459.6907124552" x2="277727.56250401406" y2="1907732.6851140284" />
+            <line id="bl-RBM04*-CBM50*" data-alt-id="bl-CBM50*-RBM04*" class="base-line" x1="275862.5530751172" y1="1908459.6907124552" x2="278097.5636861888" y2="1906808.6797719414" />
+            <line id="bl-CBM22-CBM44*" data-alt-id="bl-CBM44*-CBM22" class="base-line" x1="275975.5558004995" y1="1910830.7034562866" x2="275717.5542890747" y2="1910695.7029552136" />
+            <line id="bl-L0BM06-CBM18" data-alt-id="bl-CBM18-L0BM06" class="base-line" x1="274227.5473850769" y1="1911952.7110868834" x2="273404.543363405" y2="1912408.7142908245" />
+            <line id="bl-L0BM14-CBM28*" data-alt-id="bl-CBM28*-L0BM14" class="base-line" x1="277202.56047742" y1="1908645.6905305197" x2="277727.56250401406" y2="1907732.6851140284" />
+            <line id="bl-RBM04*-CBM21" data-alt-id="bl-CBM21-RBM04*" class="base-line" x1="275862.5530751172" y1="1908459.6907124552" x2="274499.54759935377" y2="1910558.7033014647" />
+            <line id="bl-CBM28*-CBM50*" data-alt-id="bl-CBM50*-CBM28*" class="base-line" x1="277727.56250401406" y1="1907732.6851140284" x2="278097.5636861888" y2="1906808.6797719414" />
+            <line id="bl-CBM20*-CBM43*" data-alt-id="bl-CBM43*-CBM20*" class="base-line" x1="274378.54850078025" y1="1912289.7127736802" x2="275150.5519746728" y2="1911525.707952068" />
+            <line id="bl-CBM43*-CBM49*" data-alt-id="bl-CBM49*-CBM43*" class="base-line" x1="275150.5519746728" y1="1911525.707952068" x2="275958.5564540848" y2="1911666.7079949155" />
+            <line id="bl-CBM22-CBM49*" data-alt-id="bl-CBM49*-CBM22" class="base-line" x1="275975.5558004995" y1="1910830.7034562866" x2="275958.5564540848" y2="1911666.7079949155" />
+            <line id="bl-CBM27-CBM29" data-alt-id="bl-CBM29-CBM27" class="base-line" x1="278429.5667623584" y1="1908258.6873480382" x2="278780.5688525492" y2="1908478.6882322887" />
+            <line id="bl-L0BM09-CBM52" data-alt-id="bl-CBM52-L0BM09" class="base-line" x1="279971.5779640883" y1="1911535.7037494257" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-L0BM06-CBM21" data-alt-id="bl-CBM21-L0BM06" class="base-line" x1="274227.5473850769" y1="1911952.7110868834" x2="274499.54759935377" y2="1910558.7033014647" />
+            <line id="bl-CBM35*-CBM52" data-alt-id="bl-CBM52-CBM35*" class="base-line" x1="278900.5697614857" y1="1908774.6897319073" x2="278030.56641380093" y2="1910302.6987777234" />
+            <line id="bl-CBM17-CBM20*" data-alt-id="bl-CBM20*-CBM17" class="base-line" x1="273066.5417683461" y1="1912657.7159406645" x2="274378.54850078025" y2="1912289.7127736802" />
+            <line id="bl-RBM02-L0BM08" data-alt-id="bl-L0BM08-RBM02" class="base-line" x1="282140.590911965" y1="1912985.7097083223" x2="278416.5705746142" y2="1912660.7111969523" />
+            <line id="bl-RBM01-CBM48*" data-alt-id="bl-CBM48*-RBM01" class="base-line" x1="272475.5389327178" y1="1913039.7185373865" x2="276109.55864939955" y2="1913218.7162510597" />
+            <line id="bl-RBM04*-CBM42*" data-alt-id="bl-CBM42*-RBM04*" class="base-line" x1="275862.5530751172" y1="1908459.6907124552" x2="276459.5567277261" y2="1908940.6927888521" />
+            <line id="bl-CBM24*-CBM26" data-alt-id="bl-CBM26-CBM24*" class="base-line" x1="276123.555881041" y1="1910025.6989661956" x2="275590.552278426" y2="1909211.6950311288" />
+            <line id="bl-L0BM08-CBM23" data-alt-id="bl-CBM23-L0BM08" class="base-line" x1="278416.5705746142" y1="1912660.7111969523" x2="276715.5606474029" y2="1911795.7080206692" />
+            <line id="bl-CBM27-CBM35*" data-alt-id="bl-CBM35*-CBM27" class="base-line" x1="278429.5667623584" y1="1908258.6873480382" x2="278900.5697614857" y2="1908774.6897319073" />
+            <line id="bl-CBM18-CBM20*" data-alt-id="bl-CBM20*-CBM18" class="base-line" x1="273404.543363405" y1="1912408.7142908245" x2="274378.54850078025" y2="1912289.7127736802" />
+            <line id="bl-CBM23-CBM49*" data-alt-id="bl-CBM49*-CBM23" class="base-line" x1="276715.5606474029" y1="1911795.7080206692" x2="275958.5564540848" y2="1911666.7079949155" />
+            <line id="bl-L0BM07-CBM43*" data-alt-id="bl-CBM43*-L0BM07" class="base-line" x1="275830.5568903652" y1="1912929.714937349" x2="275150.5519746728" y2="1911525.707952068" />
+            <line id="bl-L0BM14-CBM42*" data-alt-id="bl-CBM42*-L0BM14" class="base-line" x1="277202.56047742" y1="1908645.6905305197" x2="276459.5567277261" y2="1908940.6927888521" />
+            <line id="bl-L0BM08-L0BM09" data-alt-id="bl-L0BM09-L0BM08" class="base-line" x1="278416.5705746142" y1="1912660.7111969523" x2="279971.5779640883" y2="1911535.7037494257" />
+            <line id="bl-L0BM08-CBM25" data-alt-id="bl-CBM25-L0BM08" class="base-line" x1="278416.5705746142" y1="1912660.7111969523" x2="277076.5619671177" y2="1911090.7038865297" />
+            <line id="bl-RBM01-CBM21" data-alt-id="bl-CBM21-RBM01" class="base-line" x1="272475.5389327178" y1="1913039.7185373865" x2="274499.54759935377" y2="1910558.7033014647" />
+            <line id="bl-L0BM07-CBM48*" data-alt-id="bl-CBM48*-L0BM07" class="base-line" x1="275830.5568903652" y1="1912929.714937349" x2="276109.55864939955" y2="1913218.7162510597" />
+            <line id="bl-CBM22-CBM43*" data-alt-id="bl-CBM43*-CBM22" class="base-line" x1="275975.5558004995" y1="1910830.7034562866" x2="275150.5519746728" y2="1911525.707952068" />
+            <line id="bl-L0BM06-CBM19" data-alt-id="bl-CBM19-L0BM06" class="base-line" x1="274227.5473850769" y1="1911952.7110868834" x2="274028.5463177486" y2="1911957.7112923122" />
+            <line id="bl-L0BM06-PBM.2326" data-alt-id="bl-PBM.2326-L0BM06" class="base-line" x1="274227.5473850769" y1="1911952.7110868834" x2="273814.8548899778" y2="1911830.628748006" />
+            <circle id="node-RBM01" class="station-node" cx="272475.5389327178" cy="1913039.7185373865" r="57.99031187548314" />
+            <text transform="translate(272475.5389327178, 1913155.6991611375) scale(1, -1)" class="station-label" text-anchor="middle">RBM01</text>
+            <circle id="node-RBM02" class="station-node" cx="282140.590911965" cy="1912985.7097083223" r="57.99031187548314" />
+            <text transform="translate(282140.590911965, 1913101.6903320733) scale(1, -1)" class="station-label" text-anchor="middle">RBM02</text>
+            <circle id="node-RBM04*" class="station-node" cx="275862.5530751172" cy="1908459.6907124552" r="57.99031187548314" />
+            <text transform="translate(275862.5530751172, 1908575.6713362061) scale(1, -1)" class="station-label" text-anchor="middle">RBM04*</text>
+            <circle id="node-L0BM05*" class="station-node" cx="276153.5565570226" cy="1910602.7020638133" r="57.99031187548314" />
+            <text transform="translate(276153.5565570226, 1910718.6826875643) scale(1, -1)" class="station-label" text-anchor="middle">L0BM05*</text>
+            <circle id="node-L0BM06" class="station-node" cx="274227.5473850769" cy="1911952.7110868834" r="57.99031187548314" />
+            <text transform="translate(274227.5473850769, 1912068.6917106344) scale(1, -1)" class="station-label" text-anchor="middle">L0BM06</text>
+            <circle id="node-L0BM07" class="station-node" cx="275830.5568903652" cy="1912929.714937349" r="57.99031187548314" />
+            <text transform="translate(275830.5568903652, 1913045.6955611) scale(1, -1)" class="station-label" text-anchor="middle">L0BM07</text>
+            <circle id="node-L0BM08" class="station-node" cx="278416.5705746142" cy="1912660.7111969523" r="57.99031187548314" />
+            <text transform="translate(278416.5705746142, 1912776.6918207032) scale(1, -1)" class="station-label" text-anchor="middle">L0BM08</text>
+            <circle id="node-L0BM09" class="station-node" cx="279971.5779640883" cy="1911535.7037494257" r="57.99031187548314" />
+            <text transform="translate(279971.5779640883, 1911651.6843731767) scale(1, -1)" class="station-label" text-anchor="middle">L0BM09</text>
+            <circle id="node-L0BM14" class="station-node" cx="277202.56047742" cy="1908645.6905305197" r="57.99031187548314" />
+            <text transform="translate(277202.56047742, 1908761.6711542706) scale(1, -1)" class="station-label" text-anchor="middle">L0BM14</text>
+            <circle id="node-CBM17" class="station-node" cx="273066.5417683461" cy="1912657.7159406645" r="57.99031187548314" />
+            <text transform="translate(273066.5417683461, 1912773.6965644155) scale(1, -1)" class="station-label" text-anchor="middle">CBM17</text>
+            <circle id="node-CBM18" class="station-node" cx="273404.543363405" cy="1912408.7142908245" r="57.99031187548314" />
+            <text transform="translate(273404.543363405, 1912524.6949145754) scale(1, -1)" class="station-label" text-anchor="middle">CBM18</text>
+            <circle id="node-CBM20*" class="station-node" cx="274378.54850078025" cy="1912289.7127736802" r="57.99031187548314" />
+            <text transform="translate(274378.54850078025, 1912405.6933974312) scale(1, -1)" class="station-label" text-anchor="middle">CBM20*</text>
+            <circle id="node-CBM21" class="station-node" cx="274499.54759935377" cy="1910558.7033014647" r="57.99031187548314" />
+            <text transform="translate(274499.54759935377, 1910674.6839252156) scale(1, -1)" class="station-label" text-anchor="middle">CBM21</text>
+            <circle id="node-CBM22" class="station-node" cx="275975.5558004995" cy="1910830.7034562866" r="57.99031187548314" />
+            <text transform="translate(275975.5558004995, 1910946.6840800375) scale(1, -1)" class="station-label" text-anchor="middle">CBM22</text>
+            <circle id="node-CBM23" class="station-node" cx="276715.5606474029" cy="1911795.7080206692" r="57.99031187548314" />
+            <text transform="translate(276715.5606474029, 1911911.6886444201) scale(1, -1)" class="station-label" text-anchor="middle">CBM23</text>
+            <circle id="node-CBM24*" class="station-node" cx="276123.555881041" cy="1910025.6989661956" r="57.99031187548314" />
+            <text transform="translate(276123.555881041, 1910141.6795899465) scale(1, -1)" class="station-label" text-anchor="middle">CBM24*</text>
+            <circle id="node-CBM25" class="station-node" cx="277076.5619671177" cy="1911090.7038865297" r="57.99031187548314" />
+            <text transform="translate(277076.5619671177, 1911206.6845102806) scale(1, -1)" class="station-label" text-anchor="middle">CBM25</text>
+            <circle id="node-CBM26" class="station-node" cx="275590.552278426" cy="1909211.6950311288" r="57.99031187548314" />
+            <text transform="translate(275590.552278426, 1909327.6756548798) scale(1, -1)" class="station-label" text-anchor="middle">CBM26</text>
+            <circle id="node-CBM27" class="station-node" cx="278429.5667623584" cy="1908258.6873480382" r="57.99031187548314" />
+            <text transform="translate(278429.5667623584, 1908374.6679717891) scale(1, -1)" class="station-label" text-anchor="middle">CBM27</text>
+            <circle id="node-CBM28*" class="station-node" cx="277727.56250401406" cy="1907732.6851140284" r="57.99031187548314" />
+            <text transform="translate(277727.56250401406, 1907848.6657377793) scale(1, -1)" class="station-label" text-anchor="middle">CBM28*</text>
+            <circle id="node-CBM29" class="station-node" cx="278780.5688525492" cy="1908478.6882322887" r="57.99031187548314" />
+            <text transform="translate(278780.5688525492, 1908594.6688560396) scale(1, -1)" class="station-label" text-anchor="middle">CBM29</text>
+            <circle id="node-CBM34" class="station-node" cx="279041.57093662623" cy="1909244.6921560117" r="57.99031187548314" />
+            <text transform="translate(279041.57093662623, 1909360.6727797627) scale(1, -1)" class="station-label" text-anchor="middle">CBM34</text>
+            <circle id="node-CBM35*" class="station-node" cx="278900.5697614857" cy="1908774.6897319073" r="57.99031187548314" />
+            <text transform="translate(278900.5697614857, 1908890.6703556583) scale(1, -1)" class="station-label" text-anchor="middle">CBM35*</text>
+            <circle id="node-CBM42*" class="station-node" cx="276459.5567277261" cy="1908940.6927888521" r="57.99031187548314" />
+            <text transform="translate(276459.5567277261, 1909056.673412603) scale(1, -1)" class="station-label" text-anchor="middle">CBM42*</text>
+            <circle id="node-CBM43*" class="station-node" cx="275150.5519746728" cy="1911525.707952068" r="57.99031187548314" />
+            <text transform="translate(275150.5519746728, 1911641.688575819) scale(1, -1)" class="station-label" text-anchor="middle">CBM43*</text>
+            <circle id="node-CBM44*" class="station-node" cx="275717.5542890747" cy="1910695.7029552136" r="57.99031187548314" />
+            <text transform="translate(275717.5542890747, 1910811.6835789646) scale(1, -1)" class="station-label" text-anchor="middle">CBM44*</text>
+            <circle id="node-CBM48*" class="station-node" cx="276109.55864939955" cy="1913218.7162510597" r="57.99031187548314" />
+            <text transform="translate(276109.55864939955, 1913334.6968748106) scale(1, -1)" class="station-label" text-anchor="middle">CBM48*</text>
+            <circle id="node-CBM49*" class="station-node" cx="275958.5564540848" cy="1911666.7079949155" r="57.99031187548314" />
+            <text transform="translate(275958.5564540848, 1911782.6886186665) scale(1, -1)" class="station-label" text-anchor="middle">CBM49*</text>
+            <circle id="node-CBM50*" class="station-node" cx="278097.5636861888" cy="1906808.6797719414" r="57.99031187548314" />
+            <text transform="translate(278097.5636861888, 1906924.6603956923) scale(1, -1)" class="station-label" text-anchor="middle">CBM50*</text>
+            <circle id="node-CBM52" class="station-node" cx="278030.56641380093" cy="1910302.6987777234" r="57.99031187548314" />
+            <text transform="translate(278030.56641380093, 1910418.6794014743) scale(1, -1)" class="station-label" text-anchor="middle">CBM52</text>
+
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const rows = document.querySelectorAll(".session-row");
+            const lines = document.querySelectorAll(".base-line");
+            const nodes = document.querySelectorAll(".station-node");
+
+            function activateSession(row) {
+                // Clear out previous active classes
+                lines.forEach(l => l.classList.remove("active-wire"));
+                nodes.forEach(n => n.classList.remove("active-node"));
+                rows.forEach(r => r.classList.remove("active"));
+
+                row.classList.add("active");
+                const blData = row.getAttribute("data-baselines");
+                
+                // REFACTORED JS LOGIC: Gracefully exit if transit row has empty baseline paths
+                if (!blData || blData.trim() === "") return;
+
+                const pairs = blData.split(",");
+                pairs.forEach(pair => {
+                    const el = document.getElementById("bl-" + pair);
+                    const elAlt = document.getElementById("bl-" + pair.split("-").reverse().join("-"));
+                    if (el) el.classList.add("active-wire");
+                    if (elAlt) elAlt.classList.add("active-wire");
+
+                    const stations = pair.split("-");
+                    stations.forEach(sta => {
+                        const targetNode = document.getElementById("node-" + sta);
+                        if (targetNode) targetNode.classList.add("active-node");
+                    });
+                });
+            }
+
+            rows.forEach(row => {
+                row.addEventListener("mouseenter", () => activateSession(row));
+                row.addEventListener("click", () => activateSession(row));
+            });
+
+            if(rows.length > 0) activateSession(rows[0]);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNSS Operational Dashboard</title>
+    <style>
+        :root {
+            --bg-main: #0b111e;
+            --bg-card: #151f32;
+            --border-color: #24344d;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #34d399;
+            --standby-color: #ef4444;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .header h1 { margin: 0; font-size: 22px; color: var(--accent-blue); }
+        
+        /* Master layout container */
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Row 1: Sections 1, 2, 3, and 4 split evenly across the top */
+        .top-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        /* Row 2: Section 5 Scrollable Timeline Panel */
+        .bottom-row {
+            width: 100%;
+        }
+        
+        .pane {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+        }
+        
+        .pane-top-fixed {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        
+        .table-scroll {
+            overflow-x: auto;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        h2 { font-size: 13px; margin-top: 0; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        ul { list-style-type: square; padding-left: 20px; margin: 0; }
+        li { padding: 3px 0; color: #cbd5e1; font-size: 13px; }
+        strong { color: var(--accent-green); }
+        
+        /* Table Structure formatting */
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; text-align: left; font-size: 12px; white-space: nowrap; }
+        th { background-color: #0f172a; padding: 10px; border: 1px solid var(--border-color); color: var(--accent-blue); position: sticky; top: 0; z-index: 10; }
+        td { padding: 8px 10px; border: 1px solid var(--border-color); color: #cbd5e1; vertical-align: middle; }
+        tr:nth-child(even) { background-color: #1a263d; }
+        
+        .standby-cell { color: var(--standby-color); font-weight: bold; opacity: 0.7; }
+        .standby-row { background-color: #2a1b22 !important; opacity: 0.65; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>GNSS Session and Network Analysis</h1>
+        <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 13px;">Project Pipeline Status Panel —  © 2026 Phisan.Chula@gmail.com</p>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="top-row">
+            <div class="pane pane-top-fixed"><h2>1. Point Grouping Summary by Session Multiplicity</h2>
+<ul>
+<li><strong>Occupied 5 times:</strong> CBM22</li>
+<li><strong>Occupied 4 times:</strong> CBM21, CBM24<em>, CBM26, CBM43</em>, CBM44<em>, CBM48</em>, CBM52, L0BM07, L0BM14</li>
+<li><strong>Occupied 3 times:</strong> CBM17, CBM20<em>, CBM23, CBM25, CBM27, CBM28</em>, CBM35<em>, CBM42</em>, CBM50<em>, L0BM06, L0BM08, L0BM09, RBM02, RBM04</em></li>
+<li><strong>Occupied 2 times:</strong> CBM18, CBM29, CBM49<em>, L0BM05</em>, RBM01</li>
+<li><strong>Occupied 1 times:</strong> CBM34</li>
+</ul>
+<hr /></div>
+            <div class="pane pane-top-fixed"><h2>2. Independent occupations per station:</h2>
+<ul>
+<li><strong>at least 5x:</strong> 1/30 (3.3% of total stations)</li>
+<li><strong>at least 4x:</strong> 10/30 (33.3% of total stations)</li>
+<li><strong>at least 3x:</strong> 24/30 (80.0% of total stations)</li>
+<li><strong>at least 2x:</strong> 29/30 (96.7% of total stations)</li>
+<li><strong>at least 1x:</strong> 30/30 (100.0% of total stations)</li>
+</ul>
+<hr /></div>
+            <div class="pane pane-top-fixed"><h2>3. Baseline Redundancy and Observation Tally</h2>
+<ul>
+<li><strong>baseline observed 1x:</strong> 77 baselines</li>
+<li><strong>total baseline observations:</strong> 77</li>
+<li><strong>total unique baselines:</strong> 77</li>
+</ul>
+<hr /></div>
+            <div class="pane pane-top-fixed"><h2>4. GNSS Sideshot Table</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">No.</th>
+<th style="text-align: left;">Sideshot</th>
+<th style="text-align: left;">length_meter</th>
+<th style="text-align: left;">duration_min</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">L0BM06--&gt;CBM19</td>
+<td style="text-align: left;">199.0639</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">L0BM06--&gt;PBM.2326</td>
+<td style="text-align: left;">430.3710</td>
+<td style="text-align: left;">-</td>
+</tr>
+</tbody>
+</table>
+<hr /></div>
+        </div>
+        
+        <div class="bottom-row">
+            <div class="pane table-scroll">
+                <h2>5. GNSS Network Session Table</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Day</th>
+<th style="text-align: left;">Session ID</th>
+<th style="text-align: left;">Time Window</th>
+<th style="text-align: left;">Duration</th>
+<th style="text-align: left;">Producible Baselines</th>
+<th style="text-align: left;">Count</th>
+<th style="text-align: left;">RCV#1 Point</th>
+<th style="text-align: left;">RCV#1 Action</th>
+<th style="text-align: left;">RCV#2 Point</th>
+<th style="text-align: left;">RCV#2 Action</th>
+<th style="text-align: left;">RCV#3 Point</th>
+<th style="text-align: left;">RCV#3 Action</th>
+<th style="text-align: left;">RCV#4 Point</th>
+<th style="text-align: left;">RCV#4 Action</th>
+<th style="text-align: left;">RCV#5 Point</th>
+<th style="text-align: left;">RCV#5 Action</th>
+<th style="text-align: left;">RCV#6 Point</th>
+<th style="text-align: left;">RCV#6 Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-001</td>
+<td style="text-align: left;">08:00 - 08:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM25➔CBM52<br>CBM24<em>➔CBM25<br>CBM24</em>➔CBM42<em><br>L0BM05</em>➔CBM24<em><br>L0BM05</em>➔CBM22</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM22</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM24*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM25</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM42*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM52</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">L0BM05*</td>
+<td style="text-align: left;">START</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">08:40 - 09:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-002</td>
+<td style="text-align: left;">09:20 - 10:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM26➔CBM42<em><br>CBM42</em>➔CBM52<br>L0BM08➔CBM52<br>L0BM14➔CBM52<br>L0BM14➔CBM27</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM26</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM27</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM08</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM42*</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM52</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">L0BM14</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">10:00 - 10:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-003</td>
+<td style="text-align: left;">10:40 - 11:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM27➔CBM28<em><br>CBM27➔CBM50</em><br>CBM29➔CBM50<em><br>CBM29➔CBM35</em><br>L0BM14➔CBM35*</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM28*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM27</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM29</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM35*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM50*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM14</td>
+<td style="text-align: left;">KEEP</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">11:20 - 12:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-004</td>
+<td style="text-align: left;">12:00 - 12:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM34➔CBM35<em><br>L0BM09➔CBM34<br>RBM02➔CBM34<br>CBM34➔CBM52<br>CBM24</em>➔CBM52</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM24*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM34</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM52</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM35*</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">L0BM09</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">RBM02</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">12:40 - 13:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-005</td>
+<td style="text-align: left;">13:20 - 14:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM24<em>➔CBM44</em><br>CBM21➔CBM44<em><br>CBM17➔CBM21<br>CBM17➔CBM48</em><br>CBM17➔CBM18</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM24*</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM17</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM18</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM21</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM44*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM48*</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">14:00 - 14:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-006</td>
+<td style="text-align: left;">14:40 - 15:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">RBM01➔CBM17<br>L0BM07➔CBM17<br>L0BM07➔CBM23<br>CBM23➔CBM48*<br>CBM22➔CBM23</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM22</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM17</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM23</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM07</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">RBM01</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM48*</td>
+<td style="text-align: left;">KEEP</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">15:20 - 16:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-1</td>
+<td style="text-align: left;">S-007</td>
+<td style="text-align: left;">16:00 - 16:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM22➔CBM25<br>CBM23➔CBM25<br>L0BM05<em>➔CBM25<br>L0BM05</em>➔CBM44<em><br>CBM43</em>➔CBM44*</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM22</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM25</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM23</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM43*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM44*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM05*</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-008</td>
+<td style="text-align: left;">08:00 - 08:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">L0BM06➔CBM20<em><br>L0BM07➔CBM20</em><br>L0BM06➔CBM43<em><br>CBM21➔CBM43</em><br>CBM21➔CBM26</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM20*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM21</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM26</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM43*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">L0BM06</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">L0BM07</td>
+<td style="text-align: left;">START</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">08:40 - 09:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-009</td>
+<td style="text-align: left;">09:20 - 10:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM26➔CBM44<em><br>RBM04</em>➔CBM26<br>RBM04<em>➔L0BM14<br>RBM04</em>➔CBM28<em><br>RBM04</em>➔CBM50*</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM28*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM44*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM26</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM50*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM14</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">RBM04*</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">10:00 - 10:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-010</td>
+<td style="text-align: left;">10:40 - 11:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM22➔CBM44<em><br>CBM22➔CBM49</em><br>L0BM07➔CBM49<em><br>CBM43</em>➔CBM49<em><br>CBM20</em>➔CBM43*</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM20*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM44*</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM22</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM43*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM49*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM07</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">11:20 - 12:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-011</td>
+<td style="text-align: left;">12:00 - 12:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM17➔CBM20<em><br>CBM18➔CBM20</em><br>CBM18➔CBM21<br>L0BM06➔CBM18<br>RBM04*➔CBM21</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM20*</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">CBM17</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM18</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM21</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM06</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">RBM04*</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">12:40 - 13:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-012</td>
+<td style="text-align: left;">13:20 - 14:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">L0BM06➔CBM21<br>RBM01➔CBM21<br>RBM01➔CBM48<em><br>L0BM08➔CBM48</em><br>RBM02➔L0BM08</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM48*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM08</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">RBM01</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM21</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">L0BM06</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;">RBM02</td>
+<td style="text-align: left;">MOVE_TO</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">14:00 - 14:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-013</td>
+<td style="text-align: left;">14:40 - 15:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">RBM02➔L0BM09<br>L0BM09➔CBM52<br>CBM35<em>➔CBM52<br>CBM27➔CBM35</em><br>CBM27➔CBM29</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">CBM27</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM29</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM35*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM52</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM09</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">RBM02</td>
+<td style="text-align: left;">KEEP</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">15:20 - 16:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-2</td>
+<td style="text-align: left;">S-014</td>
+<td style="text-align: left;">16:00 - 16:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">L0BM08➔L0BM09<br>L0BM08➔CBM23<br>CBM23➔CBM49*<br>L0BM08➔CBM25</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">CBM23</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM25</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM49*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM08</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">L0BM09</td>
+<td style="text-align: left;">KEEP</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-3</td>
+<td style="text-align: left;">S-015</td>
+<td style="text-align: left;">08:00 - 08:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">L0BM14➔CBM28<em><br>CBM28</em>➔CBM50<em><br>L0BM14➔CBM42</em><br>RBM04<em>➔CBM42</em></td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">CBM28*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM42*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">CBM50*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">L0BM14</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">RBM04*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-3</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">08:40 - 09:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-3</td>
+<td style="text-align: left;">S-016</td>
+<td style="text-align: left;">09:20 - 10:00</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">CBM24*➔CBM26</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">CBM24*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM26</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-3</td>
+<td style="text-align: left;">transit</td>
+<td style="text-align: left;">10:00 - 10:40</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr>
+<td style="text-align: left;">Day-3</td>
+<td style="text-align: left;">S-017</td>
+<td style="text-align: left;">10:40 - 11:20</td>
+<td style="text-align: left;">40 min</td>
+<td style="text-align: left;">L0BM07➔CBM43<em><br>L0BM07➔CBM48</em><br>CBM22➔CBM43*</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">CBM22</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM43*</td>
+<td style="text-align: left;">MOVE_TO</td>
+<td style="text-align: left;">CBM48*</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;">L0BM07</td>
+<td style="text-align: left;">START</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"><em>STANDBY</em></td>
+<td style="text-align: left;">-</td>
+</tr>
+</tbody>
+</table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
